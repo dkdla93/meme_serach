@@ -106,7 +106,7 @@ def main():
     # 다시 시작하기 버튼을 타이틀 아래에 왼쪽 정렬로 배치
     col1, col2, col3 = st.columns([1, 4, 4])
     with col1:
-        st.button("🔄 다시 시작하기", on_click=lambda: [st.session_state.clear(), st.experimental_rerun()])
+        st.button("🔄 다시 시작", on_click=lambda: [st.session_state.clear(), st.experimental_rerun()])
     
     # 세션 상태 초기화
     if 'results' not in st.session_state:
@@ -284,8 +284,8 @@ def main():
         for country in st.session_state.results:
             st.header(f"{COUNTRY_FLAGS[country]} {country}")
             
-            # 두 개의 컬럼으로 나누기 (비율 조정: 1:3)
-            col1, col2 = st.columns([1, 3])
+            # 두 개의 컬럼으로 나누기 (비율 조정: 1.2:2.8)
+            col1, col2 = st.columns([1.2, 2.8])
             
             # 왼쪽 컬럼: Google Trends 결과
             with col1:
