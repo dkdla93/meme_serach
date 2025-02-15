@@ -223,7 +223,8 @@ def main():
                                 "Views": short["view_count"],
                                 "Likes": short["like_count"],
                                 "Published Date": short["published_at"],
-                                "url": short["url"]
+                                "url": short["url"],
+                                "thumbnail_img": short.get("thumbnail_img", "")  # 썸네일 URL 추가
                             })
                 
                 df_youtube = pd.DataFrame(youtube_data)
@@ -242,7 +243,7 @@ def main():
                 df_trends = pd.DataFrame(trends_data)
                 df_trends.to_excel(writer, sheet_name='Meme Keyword', index=False)
 
-                # 스타일 적용 (시트 순서도 변경)
+                # 스타일 적용
                 workbook = writer.book
                 for sheet_name in ['YouTube Shorts', 'Meme Keyword']:
                     worksheet = writer.sheets[sheet_name]
@@ -255,26 +256,73 @@ def main():
                         cell.fill = header_fill
                         cell.font = header_font
                     
-                    # 열 너비 조정
-                    for column in worksheet.columns:
-                        max_length = 0
-                        column = list(column)
-                        for cell in column:
-                            try:
-                                if len(str(cell.value)) > max_length:
-                                    max_length = len(str(cell.value))
-                            except:
-                                pass
-                        adjusted_width = (max_length + 2)
-                        worksheet.column_dimensions[column[0].column_letter].width = adjusted_width
+                    # 전체 셀 중앙 정렬
+                    for row in worksheet.iter_rows():
+                        for cell in row:
+                            cell.alignment = Alignment(horizontal="center", vertical="center")
 
-            st.download_button(
-                label="결과 Excel 파일 다운로드",
-                data=excel_buffer.getvalue(),
-                file_name="meme_search_results.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-            
+                    # 열 너비 조정
+                    if sheet_name == 'YouTube Shorts':
+                        # 기본 열 너비 설정
+                        for col_letter in ["A", "B"]:  # Country, Search Query
+                            worksheet.column_dimensions[col_letter].width = 15
+                        worksheet.column_dimensions["C"].width = 30  # Title
+                        worksheet.column_dimensions["D"].width = 20  # Channel
+                        for col_letter in ["E", "F"]:  # Views, Likes
+                            worksheet.column_dimensions[col_letter].width = 12
+                        worksheet.column_dimensions["G"].width = 15  # Published Date
+                        worksheet.column_dimensions["H"].width = 7   # URL
+                        worksheet.column_dimensions["I"].width = 30  # Thumbnail
+
+                        # 행 높이 조정
+                        worksheet.row_dimensions[1].height = 30
+                        for row_idx in range(2, len(df_youtube) + 2):
+                            worksheet.row_dimensions[row_idx].height = 135
+
+                        # 썸네일 이미지 삽입
+                        from openpyxl.drawing.image import Image as OpxImage
+                        for i, row in df_youtube.iterrows():
+                            cell_row = i + 2  # 2행부터 시작
+                            thumb_url = row["thumbnail_img"]
+                            if thumb_url:
+                                try:
+                                    resp = requests.get(thumb_url, timeout=10)
+                                    if resp.status_code == 200:
+                                        img_data = BytesIO(resp.content)
+                                        opx_img = OpxImage(img_data)
+                                        opx_img.width, opx_img.height = (240, 180)
+                                        insert_cell = f"I{cell_row}"
+                                        worksheet.add_image(opx_img, insert_cell)
+                                except:
+                                    pass
+
+                        # URL 열에 하이퍼링크 설정
+                        for row_idx in range(2, len(df_youtube) + 2):
+                            cell = worksheet[f"H{row_idx}"]
+                            if cell.value and isinstance(cell.value, str) and cell.value.startswith("http"):
+                                cell.hyperlink = cell.value
+                                cell.style = "Hyperlink"
+                                cell.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
+
+                        # 특정 열에 줄바꿈 적용
+                        for col_letter in ["C", "D", "I"]:  # Title, Channel, Thumbnail
+                            for row_idx in range(1, worksheet.max_row + 1):
+                                cell = worksheet[f"{col_letter}{row_idx}"]
+                                current_alignment = cell.alignment
+                                new_alignment = Alignment(
+                                    horizontal=current_alignment.horizontal if current_alignment else "center",
+                                    vertical=current_alignment.vertical if current_alignment else "center",
+                                    wrapText=True
+                                )
+                                cell.alignment = new_alignment
+
+                st.download_button(
+                    label="결과 Excel 파일 다운로드",
+                    data=excel_buffer.getvalue(),
+                    file_name="meme_search_results.xlsx",
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                )
+                
         except Exception as e:
             st.error(f"파일 저장 중 오류 발생: {e}")
 
