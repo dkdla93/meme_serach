@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import streamlit as st
 from io import BytesIO
 from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+from openpyxl.drawing.image import Image as OpxImage
 import re
 import time
 import os
@@ -228,7 +229,7 @@ def main():
                                 "Channel": short["channel_title"],
                                 "Views": short["view_count"],
                                 "Likes": short["like_count"],
-                                "Published Date": short["published_at"],
+                                "Published Date": datetime.strptime(short["published_at"], "%Y-%m-%dT%H:%M:%SZ").strftime("%Y-%m-%d"),
                                 "url": short["url"],
                                 "thumbnail_url": thumbnail_url
                             })
@@ -299,6 +300,7 @@ def main():
                                         img.height = 180
                                         worksheet.add_image(img, f"I{cell_row}")
                             except Exception as e:
+                                st.warning(f"이미지 삽입 실패 (행 {cell_row}): {str(e)}")
                                 continue  # 이미지 삽입 실패 시 건너뛰기
 
                         # URL 열에 하이퍼링크 설정
