@@ -292,7 +292,7 @@ def main():
                 st.subheader("급상승 검색어")
                 trends_df = pd.DataFrame(st.session_state.results[country]["rising_related_queries"])
                 if not trends_df.empty:
-                    st.dataframe(trends_df, height=600)  # 높이 증가
+                    st.dataframe(trends_df, height=600, use_container_width=True)  # 컨테이너 너비 사용
                 else:
                     st.write("검색 결과가 없습니다.")
             
@@ -308,12 +308,14 @@ def main():
                                 st.write(f"**키워드: {query}**")
                                 st.dataframe(
                                     shorts_df[['title', 'view_count', 'like_count', 'channel_title', 'url']],
-                                    height=500  # 높이 증가
+                                    height=500,
+                                    use_container_width=True  # 컨테이너 너비 사용
                                 )
                             else:
                                 st.write("검색 결과가 없습니다.")
             
-            st.markdown("---")  # 구분선 추가
+            # 구분선 제거
+            st.write("")  # 간격을 위한 빈 줄 추가
 
     # 유튜브 영상 다운로드 섹션 추가
     st.divider()
