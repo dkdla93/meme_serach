@@ -11,10 +11,15 @@ import time
 import os
 import zipfile
 import yt_dlp
+import random
 
 # API 키를 st.secrets에서 가져오기
 SERPAPI_API_KEY = st.secrets["SERPAPI_API_KEY"]
-YOUTUBE_API_KEY = st.secrets["YOUTUBE_API_KEY"]
+YOUTUBE_API_KEYS = st.secrets["YOUTUBE_API_KEYS"]
+
+def get_youtube_api_key():
+    """YouTube API 키를 순환하여 사용"""
+    return random.choice(YOUTUBE_API_KEYS)
 
 # 국가별 검색어 설정
 COUNTRY_QUERIES = {
@@ -43,7 +48,7 @@ def parse_iso8601_duration(duration_str):
 def get_youtube_shorts(search_query, days_ago=365, max_results=5):
     """YouTube Shorts 검색 함수"""
     try:
-        youtube = build('youtube', 'v3', developerKey=YOUTUBE_API_KEY)
+        youtube = build('youtube', 'v3', developerKey=get_youtube_api_key())
         
         # 선택된 기간 전 날짜 계산
         period_ago = (datetime.now() - timedelta(days=days_ago)).strftime('%Y-%m-%dT%H:%M:%SZ')
