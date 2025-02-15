@@ -327,17 +327,16 @@ def main():
                                 except Exception as e:
                                     continue
 
-                # 워크북 저장
-                writer.save()
-                writer.close()
+            # 워크북과 관련된 모든 작업이 with 블록 안에서 완료됨
+            # (명시적인 save나 close 호출 제거)
 
-                st.download_button(
-                    label="결과 Excel 파일 다운로드",
-                    data=excel_buffer.getvalue(),
-                    file_name="meme_search_results.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                )
-                
+            st.download_button(
+                label="결과 Excel 파일 다운로드",
+                data=excel_buffer.getvalue(),
+                file_name="meme_search_results.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            
         except Exception as e:
             st.error(f"파일 저장 중 오류 발생: {e}")
 
