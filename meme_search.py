@@ -215,6 +215,12 @@ def main():
                 for country, queries in st.session_state.youtube_results.items():
                     for query, shorts in queries.items():
                         for short in shorts:
+                            # 썸네일 URL 가져오기
+                            try:
+                                thumbnail_url = f"https://i.ytimg.com/vi/{short['video_id']}/hqdefault.jpg"
+                            except:
+                                thumbnail_url = ""
+
                             youtube_data.append({
                                 "Country": country,
                                 "Search Query": query,
@@ -224,7 +230,7 @@ def main():
                                 "Likes": short["like_count"],
                                 "Published Date": short["published_at"],
                                 "url": short["url"],
-                                "thumbnail_img": short.get("thumbnail_img", "")  # 썸네일 URL 추가
+                                "thumbnail_url": thumbnail_url
                             })
                 
                 df_youtube = pd.DataFrame(youtube_data)
@@ -280,41 +286,50 @@ def main():
                             worksheet.row_dimensions[row_idx].height = 135
 
                         # 썸네일 이미지 삽입
-                        from openpyxl.drawing.image import Image as OpxImage
                         for i, row in df_youtube.iterrows():
-                            cell_row = i + 2  # 2행부터 시작
-                            thumb_url = row["thumbnail_img"]
-                            if thumb_url:
-                                try:
-                                    resp = requests.get(thumb_url, timeout=10)
+                            try:
+                                cell_row = i + 2  # 2행부터 시작
+                                thumb_url = row["thumbnail_url"]
+                                if thumb_url and isinstance(thumb_url, str):
+                                    resp = requests.get(thumb_url, timeout=5)
                                     if resp.status_code == 200:
                                         img_data = BytesIO(resp.content)
-                                        opx_img = OpxImage(img_data)
-                                        opx_img.width, opx_img.height = (240, 180)
-                                        insert_cell = f"I{cell_row}"
-                                        worksheet.add_image(opx_img, insert_cell)
-                                except:
-                                    pass
+                                        img = OpxImage(img_data)
+                                        img.width = 240
+                                        img.height = 180
+                                        worksheet.add_image(img, f"I{cell_row}")
+                            except Exception as e:
+                                continue  # 이미지 삽입 실패 시 건너뛰기
 
                         # URL 열에 하이퍼링크 설정
                         for row_idx in range(2, len(df_youtube) + 2):
-                            cell = worksheet[f"H{row_idx}"]
-                            if cell.value and isinstance(cell.value, str) and cell.value.startswith("http"):
-                                cell.hyperlink = cell.value
-                                cell.style = "Hyperlink"
-                                cell.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
+                            try:
+                                cell = worksheet[f"H{row_idx}"]
+                                if cell.value and isinstance(cell.value, str) and cell.value.startswith("http"):
+                                    cell.hyperlink = cell.value
+                                    cell.style = "Hyperlink"
+                                    cell.alignment = Alignment(horizontal="left", vertical="center", wrapText=True)
+                            except Exception as e:
+                                continue
 
                         # 특정 열에 줄바꿈 적용
                         for col_letter in ["C", "D", "I"]:  # Title, Channel, Thumbnail
                             for row_idx in range(1, worksheet.max_row + 1):
-                                cell = worksheet[f"{col_letter}{row_idx}"]
-                                current_alignment = cell.alignment
-                                new_alignment = Alignment(
-                                    horizontal=current_alignment.horizontal if current_alignment else "center",
-                                    vertical=current_alignment.vertical if current_alignment else "center",
-                                    wrapText=True
-                                )
-                                cell.alignment = new_alignment
+                                try:
+                                    cell = worksheet[f"{col_letter}{row_idx}"]
+                                    current_alignment = cell.alignment
+                                    new_alignment = Alignment(
+                                        horizontal=current_alignment.horizontal if current_alignment else "center",
+                                        vertical=current_alignment.vertical if current_alignment else "center",
+                                        wrapText=True
+                                    )
+                                    cell.alignment = new_alignment
+                                except Exception as e:
+                                    continue
+
+                # 워크북 저장
+                writer.save()
+                writer.close()
 
                 st.download_button(
                     label="결과 Excel 파일 다운로드",
